@@ -72,6 +72,8 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           echo "Deploying to Test Environment..."
+          pwd
+          ls -ltr
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
 
   deploy_to_production:
