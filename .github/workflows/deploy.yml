@@ -74,6 +74,7 @@ jobs:
           echo "Deploying to Test Environment..."
           pwd
           ls -ltr
+          $HOME
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
 
   deploy_to_production:
