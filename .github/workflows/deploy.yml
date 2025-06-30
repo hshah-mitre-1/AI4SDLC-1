@@ -10,7 +10,7 @@ jobs:
   convert_md_to_html:
     name: Convert Markdown to HTML
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run only for non-main branches
+    if: github.ref == 'refs/heads/main' # Run only for non-main branches
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -42,7 +42,7 @@ jobs:
     name: Deploy to Test Environment
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run only for non-main branches
+    if: github.ref == 'refs/heads/main' # Run only for non-main branches
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
@@ -74,7 +74,7 @@ jobs:
     name: Deploy to Production Environment
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run only for the main branch
+    if: github.ref != 'refs/heads/main' # Run only for the main branch
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v3
