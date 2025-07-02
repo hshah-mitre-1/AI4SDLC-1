@@ -1,109 +1,50 @@
-name: Deploy MkDocs to S3
+name: Deploy GitHub Pages
 
 on:
   push:
     branches:
       - main
-      - '**' # Matches all branches except main for non-production environments
+      - dev
 
 jobs:
-  convert_md_to_html:
-    name: Convert Markdown to HTML
+  build:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run only for non-main branches
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      # Set up Ruby environment
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          python-version: 3.9
+          ruby-version: '3.0' # Adjust Ruby version as needed
+          bundler-cache: true
 
-      - name: Install MkDocs and Dependencies
+      # Install dependencies
+      - name: Install dependencies
         run: |
-          echo "Converting md file to html using MkDocs..."
-          pip install mkdocs mkdocs-material
+          gem install jekyll bundler
+          bundle install
 
-      - name: Build MkDocs Project
+      # Build the Jekyll site
+      - name: Build Jekyll site
         run: |
-          echo "Building your project..."
-          mkdocs build
-          echo "Listing built files..."
-          ls site
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: site
-          path: site
-
-  deploy_to_test:
-    name: Deploy to Test Environment
-    needs: convert_md_to_html
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run only for non-main branches
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-
-      - name: Install AWS CLI
-        run: |
-          if ! aws --version; then
-            echo "Installing AWS CLI..."
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip -q awscliv2.zip
-            ./aws/install
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            bundle exec jekyll build -d public
           else
-            echo "AWS CLI is already installed."
-          fi            
+            bundle exec jekyll build -d test
+          fi
 
-      - name: Install Certificates
-        run: |
-          echo "Installing Certificates..."
-          curl -ksSL "https://gitlab.mitre.org/mitre-scripts/mitre-pki/raw/master/tool_scripts/install_certs.sh" | MODE=aws_cli sh
-          export AWS_CA_BUNDLE=${HOME}/.aws/mitre-ca-bundle.pem
-
-      - name: Deploy to Test S3 Bucket
-        env:
-          AWS_CA_BUNDLE: ${HOME}/.aws/mitre-ca-bundle.pem
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: |
-          echo "Deploying to Test Environment..."
-          pwd
-          ls -ltr
-          aws s3 sync /home/runner/work/AI4SDLC/AI4SDLC s3://$S3_BUCKET_NAME/test
-
-  deploy_to_production:
-    name: Deploy to Production Environment
-    needs: convert_md_to_html
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run only for the main branch
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: site
-
-      - name: Install AWS CLI
-        run: |
-          echo "Installing AWS CLI..."
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -q awscliv2.zip
-          ./aws/install
-
-      - name: Install Certificates
-        run: |
-          echo "Installing Certificates..."
-          curl -ksSL "https://gitlab.mitre.org/mitre-scripts/mitre-pki/raw/master/tool_scripts/install_certs.sh" | MODE=aws_cli sh
-          export AWS_CA_BUNDLE=${HOME}/.aws/mitre-ca-bundle.pem
-
-      - name: Deploy to Production S3 Bucket
-        env:
-          AWS_CA_BUNDLE: ${HOME}/.aws/mitre-ca-bundle.pem
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: |
-          echo "Deploying to Production Environment..."
-          aws s3 sync s3://$S3_BUCKET_NAME/test/ s3://$S3_BUCKET_NAME/production/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: |
+            if [ "${{ github.ref_name }}" == "main" ]; then
+              public
+            else
+              test
+            fi
