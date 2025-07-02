@@ -43,7 +43,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: |
-            if [ "${{ github.ref_name }}" == "main" ]; then
+            if [ "${{ github.ref_name }}" != "main" ]; then
               public
             else
               test
