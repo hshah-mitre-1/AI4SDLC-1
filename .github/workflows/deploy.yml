@@ -31,7 +31,7 @@ jobs:
       # Build the Jekyll site
       - name: Build Jekyll site
         run: |
-          if [ "${{ github.ref_name }}" != "main" ]; then
+          if [ "${{ github.ref_name }}" == "main" ]; then
             bundle exec jekyll build -d public
           else
             bundle exec jekyll build -d test
@@ -43,7 +43,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: |
-            if [ "${{ github.ref_name }}" != "main" ]; then
+            if [ "${{ github.ref_name }}" == "main" ]; then
               public
             else
               test
