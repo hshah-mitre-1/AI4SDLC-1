@@ -1,50 +1,26 @@
-name: Deploy GitHub Pages
+name: Deploy to AWS
 
 on:
   push:
     branches:
       - main
-      - dev
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Ruby environment
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          ruby-version: '3.0' # Adjust Ruby version as needed
-          bundler-cache: true
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      # Install dependencies
-      - name: Install dependencies
+      - name: Deploy to AWS
         run: |
-          gem install jekyll bundler
-          bundle install
-
-      # Build the Jekyll site
-      - name: Build Jekyll site
-        run: |
-          if [ "${{ github.ref_name }}" == "main" ]; then
-            bundle exec jekyll build -d public
-          else
-            bundle exec jekyll build -d test
-          fi
-
-      # Deploy to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: |
-            if [ "${{ github.ref_name }}" == "main" ]; then
-              public
-            else
-              test
-            fi
+          # Add your AWS CLI or SDK commands here
+          aws s3 ls
