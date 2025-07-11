@@ -28,6 +28,8 @@ jobs:
         run: |
           echo "Building your project..."
           mkdocs build
+          echo "pwd in build project with MKDocs"
+          pwd
 
       - name: Debug MkDocs Build Output
         run: |
@@ -58,6 +60,8 @@ jobs:
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
+          echo "pwd in Deploy to Test Environment"
+          pwd 
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
           aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }}
 
