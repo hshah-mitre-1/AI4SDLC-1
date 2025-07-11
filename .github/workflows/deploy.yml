@@ -10,7 +10,7 @@ jobs:
   # Build stage - converting md file to html using MkDocs
   convert_md_to_html:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Only run for non-main branches
+    if: github.ref != 'refs/heads/main' # Run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,14 +28,14 @@ jobs:
         run: |
           echo "Building your project..."
           mkdocs build
+
       - name: Debug MkDocs Build Output
         run: |
           echo "Contents of site directory:"
           ls -l site
-          
 
       - name: Save artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: site
           path: site
@@ -44,15 +44,21 @@ jobs:
   deploy_to_test:
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Only run for non-main branches
+    if: github.ref != 'refs/heads/main' # Run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: site
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install
 
       - name: Deploy to Test Environment
         env:
@@ -65,7 +71,7 @@ jobs:
   deploy_to_production:
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Only run for main branch
+    if: github.ref == 'refs/heads/main' # Run for main branch
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -75,6 +81,11 @@ jobs:
         with:
           name: site
 
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install
 
       - name: Deploy to Production Environment
         env:
