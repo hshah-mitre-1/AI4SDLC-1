@@ -10,7 +10,7 @@ jobs:
   # Build stage - converting md file to html using MkDocs
   convert_md_to_html:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run for non-main branches
+    if: github.ref != 'refs/heads/main' # Run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -46,7 +46,7 @@ jobs:
   deploy_to_test:
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run for non-main branches
+    if: github.ref != 'refs/heads/main' # Run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -77,7 +77,7 @@ jobs:
   deploy_to_production:
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run for main branch
+    if: github.ref == 'refs/heads/main' # Run for main branch
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
