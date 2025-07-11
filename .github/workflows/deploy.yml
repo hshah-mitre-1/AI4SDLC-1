@@ -54,12 +54,6 @@ jobs:
         with:
           name: site
 
-      - name: Install AWS CLI
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -q awscliv2.zip
-          sudo ./aws/install
-
       - name: Deploy to Test Environment
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
@@ -80,12 +74,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site
-
-      - name: Install AWS CLI
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -q awscliv2.zip
-          sudo ./aws/install
 
       - name: Deploy to Production Environment
         env:
