@@ -8,8 +8,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+  # Build stage - converting md file to html using MkDocs
+  convert_md_to_html:
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main' # Only run for non-main branches
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install MkDocs and dependencies
+        run: |
+          pip install mkdocs mkdocs-material
+
+      - name: Build project with MkDocs
+        run: |
+          echo "Building your project..."
+          mkdocs build
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: site    
+    
       - name: Checkout code
         uses: actions/checkout@v3
 
