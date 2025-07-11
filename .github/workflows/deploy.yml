@@ -1,17 +1,16 @@
-name: Deploy to AWS
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
+      - "*"
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
   # Build stage - converting md file to html using MkDocs
   convert_md_to_html:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Only run for non-main branches
+    if: github.ref == 'refs/heads/main' # Only run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,19 +33,46 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: site
-          path: site    
-    
+          path: site
+
+  # Deployment to test folder in S3 bucket
+  deploy_to_test:
+    needs: convert_md_to_html
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only run for non-main branches
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          name: site
 
-      - name: Deploy to AWS
+      - name: Deploy to Test Environment
+        env:
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          # Add your AWS CLI or SDK commands here
-          aws s3 ls
+          aws s3 sync site/ s3://$S3_BUCKET_NAME/test
+          aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }}
+
+  # Deployment to production folder in S3 bucket
+  deploy_to_production:
+    needs: convert_md_to_html
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main' # Only run for main branch
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: site
+
+
+      - name: Deploy to Production Environment
+        env:
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: |
+          aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }} s3://$S3_BUCKET_NAME/production/
