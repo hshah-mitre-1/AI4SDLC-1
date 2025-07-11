@@ -75,7 +75,6 @@ jobs:
 
   # Deployment to production folder in S3 bucket
   deploy_to_production:
-    needs: convert_md_to_html
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' # Run for main branch
     steps:
