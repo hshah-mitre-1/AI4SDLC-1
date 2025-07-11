@@ -28,6 +28,11 @@ jobs:
         run: |
           echo "Building your project..."
           mkdocs build
+      - name: Debug MkDocs Build Output
+        run: |
+          echo "Contents of site directory:"
+          ls -l site
+          
 
       - name: Save artifacts
         uses: actions/upload-artifact@v4
