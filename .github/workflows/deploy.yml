@@ -62,7 +62,8 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           echo "pwd in Deploy to Test Environment"
-          pwd 
+          pwd
+          aws s3 ls
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
           aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }}
 
