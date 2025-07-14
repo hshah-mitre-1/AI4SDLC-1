@@ -70,6 +70,8 @@ jobs:
           echo "pwd in Deploy to Test Environment"
           echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Environment"
           echo "PR Number in Test Environment ${{ github.event.pull_request.number }}"
+          PR_NUMBER=$(git log -1 --pretty=%B | grep -oE '#[0-9]+' | head -1 | tr -d '#')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT          
           pwd
           aws s3 ls
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
