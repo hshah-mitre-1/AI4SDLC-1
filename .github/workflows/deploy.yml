@@ -51,11 +51,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Get PR number for this commit
+      - name: Get PR number from GitHub API
         id: pr
         run: |
-          PR_NUMBER=$(gh pr list --state merged --search "$GITHUB_SHA" --json number --jq '.[0].number')
-          echo "pr_numberrrrrr=$PR_NUMBER"
+          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
+          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            $PR_API_URL | jq '.[0].number')
+          echo "pr_number=$PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
