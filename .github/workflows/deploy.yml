@@ -69,6 +69,7 @@ jobs:
         run: |
           echo "pwd in Deploy to Test Environment"
           echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Environment"
+          echo "PR Number in Test Environment ${{ github.event.pull_request.number }}"
           pwd
           aws s3 ls
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
@@ -89,5 +90,7 @@ jobs:
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
+          PR_NUMBER=$(gh pr list --state merged --search "$GITHUB_SHA" --json number --jq '.[0].number')        
+          echo "PR Number in Production Environment $PR_NUMBER"
           echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Production"
           aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }} s3://$S3_BUCKET_NAME/production/
