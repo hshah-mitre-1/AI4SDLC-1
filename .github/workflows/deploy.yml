@@ -99,11 +99,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1  # change if needed
+      - name: Get PR number from GitHub API
+        id: pr
+        run: |
+          echo "Before pr_number=$PR_NUMBER"
+          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
+          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            $PR_API_URL | jq '.[0].number')
+          echo "after pr_number=$PR_NUMBER"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Deploy to Production Environment
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          PR_NUMBER=$(gh pr list --state merged --search "$GITHUB_SHA" --json number --jq '.[0].number')        
-          echo "PR Number in Production Environment $PR_NUMBER"
-          echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Production"
+          echo "inside pr_number=$PR_NUMBER"
           aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }} s3://$S3_BUCKET_NAME/production/
