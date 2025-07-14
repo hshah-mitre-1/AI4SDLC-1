@@ -87,7 +87,7 @@ jobs:
           pwd
           aws s3 ls
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
-          aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }}
+          aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/$PR_NUMBER
          
   # Deployment to production folder in S3 bucket
   deploy_to_production:
@@ -115,6 +115,13 @@ jobs:
       - name: Deploy to Production Environment
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
         run: |
           echo "inside pr_number=$PR_NUMBER"
-          aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }} s3://$S3_BUCKET_NAME/production/
+          echo "Before pr_number=$PR_NUMBER"
+          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
+          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            $PR_API_URL | jq '.[0].number')
+          echo "after pr_number=$PR_NUMBER"          
+          aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/$PR_NUMBER s3://$S3_BUCKET_NAME/production/
