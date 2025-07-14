@@ -55,7 +55,7 @@ jobs:
         id: pr
         run: |
           PR_NUMBER=$(gh pr list --state merged --search "$GITHUB_SHA" --json number --jq '.[0].number')
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_numberrrrrr=$PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
