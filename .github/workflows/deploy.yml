@@ -51,6 +51,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Get PR number from commit message
+        id: pr
+        run: |
+          PR_NUMBER=$(git log -1 --pretty=%B | grep -oE '#[0-9]+' | head -1 | tr -d '#')
+          echo "pr_number=$PR_NUMBER"
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
