@@ -68,6 +68,7 @@ jobs:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           echo "pwd in Deploy to Test Environment"
+          echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Environment"
           pwd
           aws s3 ls
           aws s3 sync site/ s3://$S3_BUCKET_NAME/test
@@ -88,4 +89,5 @@ jobs:
         env:
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
+          echo "Deploying commit $GITHUB_SHA in workflow run $GITHUB_RUN_ID in Test Production"
           aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/${{ github.sha }} s3://$S3_BUCKET_NAME/production/
