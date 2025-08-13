@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
       - "*"
 
 jobs:
@@ -31,10 +34,50 @@ jobs:
           name: site
           path: site
 
+  deploy_to_vercel:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel (Preview)
+        id: vercel_deploy
+        run: |
+          url=$(vercel --token ${{ secrets.VERCEL_TOKEN }} --yes site | tail -1)
+          echo "VERCEL_URL=$url" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Comment PR with Vercel Preview URL
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: 🚀 Vercel Preview:[${{ steps.vercel_deploy.outputs.VERCEL_URL }}](${{ steps.vercel_deploy.outputs.VERCEL_URL }})
+          token: ${{ secrets.PRODUCTION_REPO_ACCESS_TOKEN }}
+
+
+
   deploy_to_github_pages:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -48,5 +91,5 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.PRODUCTION_REPO_ACCESS_TOKEN}}
+          github_token: ${{ secrets.PRODUCTION_REPO_ACCESS_TOKEN }}
           publish_dir: site
