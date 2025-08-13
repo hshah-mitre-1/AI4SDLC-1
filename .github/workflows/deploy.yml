@@ -69,8 +69,9 @@ jobs:
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            🚀 Vercel Preview: [${{ steps.vercel_deploy.outputs.VERCEL_URL }}](${{ steps.vercel_deploy.outputs.VERCEL_URL }})
+          body: 🚀 Vercel Preview:[${{ steps.vercel_deploy.outputs.VERCEL_URL }}](${{ steps.vercel_deploy.outputs.VERCEL_URL }})
+          token: ${{ secrets.PRODUCTION_REPO_ACCESS_TOKEN }}
+
 
 
   deploy_to_github_pages:
