@@ -46,7 +46,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site
-          path: site
+          path: .
+      - name: List site directory
+        run: ls -l site
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
