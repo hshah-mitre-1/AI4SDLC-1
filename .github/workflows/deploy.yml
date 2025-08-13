@@ -10,7 +10,6 @@ jobs:
   # Build stage - converting md file to html using MkDocs
   convert_md_to_html:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run for non-main branches
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,15 +25,7 @@ jobs:
 
       - name: Build project with MkDocs
         run: |
-          echo "Building your project..."
           mkdocs build
-          echo "pwd in build project with MKDocs"
-          pwd
-
-      - name: Debug MkDocs Build Output
-        run: |
-          echo "Contents of site directory:"
-          ls -l site
 
       - name: Save artifacts
         uses: actions/upload-artifact@v4
@@ -42,86 +33,67 @@ jobs:
           name: site
           path: site
 
-  # Deployment to test folder in S3 bucket
-  deploy_to_test:
+  # Deploy to Netlify Preview (for non-main branches/PRs)
+  deploy_to_netlify_preview:
     needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main' # Run for non-main branches
+    if: github.ref != 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Get PR number from GitHub API
-        id: pr
-        run: |
-          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
-          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            $PR_API_URL | jq '.[0].number')
-          echo "pr_number=$PR_NUMBER"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: site
           path: site
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # change if needed
 
-      - name: Deploy to Test Environment
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy Preview to Netlify
         env:
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
-          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
-          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            $PR_API_URL | jq '.[0].number')
-          echo "pr_number while deploying =$PR_NUMBER"          
-          pwd
-          #aws s3 ls
-          #aws s3 sync site/ s3://$S3_BUCKET_NAME/test
-          #aws s3 sync site/ s3://$S3_BUCKET_NAME/MergeRequest/$PR_NUMBER
-         
-  # Deployment to production folder in S3 bucket
-  deploy_to_production:
+          netlify deploy \
+            --dir=site \
+            --site=$NETLIFY_SITE_ID \
+            --auth=$NETLIFY_AUTH_TOKEN \
+            --message="Preview for $GITHUB_REF" \
+            --json > deploy-info.json
+          echo "Preview URL:"
+          cat deploy-info.json | jq -r '.deploy_url'
+
+  # Deploy to Netlify Production (for main branch)
+  deploy_to_netlify_production:
+    needs: convert_md_to_html
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Run for main branch
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # change if needed
-      - name: Get PR number from GitHub API
-        id: pr
-        run: |
-          echo "Before pr_number=$PR_NUMBER"
-          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
-          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            $PR_API_URL | jq '.[0].number')
-          echo "after pr_number=$PR_NUMBER"
+          name: site
+          path: site
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy Production to Netlify
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Deploy to Production Environment
-        env:
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
-          echo "inside pr_number=$PR_NUMBER"
-          echo "Before pr_number=$PR_NUMBER"
-          PR_API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls"
-          PR_NUMBER=$(curl -s -H "Accept: application/vnd.github.groot-preview+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            $PR_API_URL | jq '.[0].number')
-          echo "after pr_number=$PR_NUMBER"          
-          #aws s3 sync s3://$S3_BUCKET_NAME/MergeRequest/$PR_NUMBER s3://$S3_BUCKET_NAME/production/
+          netlify deploy \
+            --dir=site \
+            --site=$NETLIFY_SITE_ID \
+            --auth=$NETLIFY_AUTH_TOKEN \
+            --prod \
+            --message="Production deploy for $GITHUB_REF" \
+            --json > deploy-info.json
+          echo "Production URL:"
+          cat deploy-info.json | jq -r '.deploy_url'
