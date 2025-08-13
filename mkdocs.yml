@@ -1,3 +1,4 @@
 site_name: My Documentation
+repo_url: https://hshah-mitre-1.github.io/AI4SDLC/
 theme:
   name: material
