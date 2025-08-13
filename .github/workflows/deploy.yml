@@ -33,40 +33,6 @@ jobs:
           name: site
           path: site
 
-  # Deploy to Netlify Preview (for non-main branches/PRs)
-  deploy_to_netlify_preview:
-    needs: convert_md_to_html
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: site
-          path: .
-      - name: List site directory
-        run: ls -l site
-
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy Preview to Netlify
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          netlify deploy \
-            --dir=site \
-            --site=$NETLIFY_SITE_ID \
-            --auth=$NETLIFY_AUTH_TOKEN \
-            --message="Preview for $GITHUB_REF" \
-            --json > deploy-info.json
-          echo "Preview URL:"
-          cat deploy-info.json | jq -r '.deploy_url'
-
   # Deploy to Netlify Production (for main branch)
   deploy_to_netlify_production:
     needs: convert_md_to_html
