@@ -7,8 +7,7 @@ on:
       - "*"
 
 jobs:
-  # Build stage - converting md file to html using MkDocs
-  convert_md_to_html:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,44 +23,30 @@ jobs:
           pip install mkdocs mkdocs-material
 
       - name: Build project with MkDocs
-        run: |
-          mkdocs build
+        run: mkdocs build
 
-      - name: Save artifacts
+      - name: Upload site artifact
         uses: actions/upload-artifact@v4
         with:
           name: site
           path: site
 
-  # Deploy to Netlify Production (for main branch)
-  deploy_to_netlify_production:
-    needs: convert_md_to_html
+  deploy_to_github_pages:
+    needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download artifacts
+      - name: Download site artifact
         uses: actions/download-artifact@v4
         with:
           name: site
           path: site
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy Production to Netlify
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          netlify deploy \
-            --dir=site \
-            --site=$NETLIFY_SITE_ID \
-            --auth=$NETLIFY_AUTH_TOKEN \
-            --prod \
-            --message="Production deploy for $GITHUB_REF" \
-            --json > deploy-info.json
-          echo "Production URL:"
-          cat deploy-info.json | jq -r '.deploy_url'
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
